@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responsive Video Player Example</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    overflow: hidden;
+    background-color: #000; /* Fallback background color */
+  }
+
+  .video-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .logo-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    opacity: 0.7; /* Adjust the opacity as needed */
+  }
+
+  .logo-overlay img {
+    width: 100px; /* Adjust the width of the logo as needed */
+    height: auto;
+  }
+
+  @media (max-width: 768px) {
+    .logo-overlay {
+      top: 10px;
+      left: 280px;
+      transform: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="video-container">
+  <video id="myVideo" controls autoplay poster="https://s10.gifyu.com/images/SYGkR.jpg">
+    <!-- Replace with a fallback video source if WebTorrent is not supported -->
+    <source src="https://dai.google.com/ssai/event/oZNVxALASVyYS4HMtTpRCw/master.m3u8" type="application/x-mpegURL">
+    Your browser does not support the video tag or HLS streams.
+  </video>
+  <div class="logo-overlay">
+    <img src="https://s10.gifyu.com/images/SrMU9.png" alt="Logo">
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/webtorrent/0.107.0/webtorrent.min.js"></script>
+<script>
+  // Initialize WebTorrent client
+  var client = new WebTorrent();
+
+  // Add your torrent file or magnet URI here
+  var magnetURI = 'magnet:?xt=urn:btih:YOUR_TORRENT_HASH';
+
+  // Start streaming the torrent
+  client.add(magnetURI, function (torrent) {
+    // Select the appropriate file from the torrent
+    var file = torrent.files.find(function (file) {
+      return file.name.endsWith('.mp4'); // Adjust the file type as needed
+    });
+
+    // Stream the file into the video element
+    file.createReadStream().pipe(document.getElementById('myVideo'));
+  });
+</script>
+
+</body>
+  </html>
+  
