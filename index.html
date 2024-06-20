@@ -40,13 +40,17 @@
         #error-message {
             background-color: rgba(255, 0, 0, 0.5);
         }
+
+        #retry-message {
+            color: yellow;
+        }
     </style>
 </head>
 <body>
     <div id="player-container">
         <video id="video" controls></video>
         <div id="buffering-message">Buffering...</div>
-        <div id="error-message">An error occurred. Please try again later.</div>
+        <div id="error-message">An error occurred. Please try again later.<div id="retry-message"></div></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
@@ -54,7 +58,9 @@
             const video = document.getElementById('video');
             const bufferingMessage = document.getElementById('buffering-message');
             const errorMessage = document.getElementById('error-message');
-            
+            const retryMessage = document.getElementById('retry-message');
+            let retryCount = 0;
+
             function showBuffering() {
                 bufferingMessage.style.display = 'block';
             }
@@ -63,13 +69,32 @@
                 bufferingMessage.style.display = 'none';
             }
 
-            function showError() {
+            function showError(retry) {
                 errorMessage.style.display = 'block';
                 video.style.display = 'none';
+                if (retry) {
+                    retryMessage.textContent = `Retrying in ${retry} seconds...`;
+                }
+            }
+
+            function hideError() {
+                errorMessage.style.display = 'none';
+                video.style.display = 'block';
             }
 
             if (Hls.isSupported()) {
-                const hls = new Hls();
+                const hls = new Hls({
+                    maxBufferLength: 60,
+                    maxMaxBufferLength: 300,
+                    maxBufferSize: 60 * 1000 * 1000,
+                    maxBufferHole: 2,
+                    lowBufferWatchdogPeriod: 0.5,
+                    highBufferWatchdogPeriod: 3,
+                    liveSyncDuration: 30,
+                    liveMaxLatencyDuration: 60,
+                    liveSyncDurationCount: 3,
+                    liveMaxLatencyDurationCount: Infinity,
+                });
                 hls.loadSource('https://tv5.hoichoi24.com/1024/index.m3u8');
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -84,11 +109,21 @@
                         switch (data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
                                 console.error("Fatal network error encountered, trying to recover...");
-                                hls.startLoad();
+                                retryCount++;
+                                showError(5 * retryCount);
+                                setTimeout(() => {
+                                    hls.startLoad();
+                                    hideError();
+                                }, 5000 * retryCount);
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
                                 console.error("Fatal media error encountered, trying to recover...");
-                                hls.recoverMediaError();
+                                retryCount++;
+                                showError(5 * retryCount);
+                                setTimeout(() => {
+                                    hls.recoverMediaError();
+                                    hideError();
+                                }, 5000 * retryCount);
                                 break;
                             default:
                                 console.error("Fatal error encountered, cannot recover.");
@@ -105,10 +140,5 @@
                 });
 
                 video.addEventListener('waiting', showBuffering);
-                video.addEventListener('playing', hideBuffering);
-                video.addEventListener('error', showError);
-            }
-        });
-    </script>
-</body>
-</html>
+
+            
