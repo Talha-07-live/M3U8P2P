@@ -16,13 +16,19 @@
 
         #player-container {
             position: relative;
-            width: 80%;
-            max-width: 800px;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background-color: #000;
         }
 
         #video {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: auto;
+            height: 100%;
         }
 
         #buffering-message, #error-message {
@@ -48,7 +54,7 @@
 </head>
 <body>
     <div id="player-container">
-        <video id="video" controls></video>
+        <video id="video" controls poster="https://s10.gifyu.com/images/SYGkR.jpg"></video>
         <div id="buffering-message">Buffering...</div>
         <div id="error-message">An error occurred. Please try again later.<div id="retry-message"></div></div>
     </div>
