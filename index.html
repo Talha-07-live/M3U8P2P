@@ -1,51 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>JW Player DRM with P2P Example</title>
-    <script src="https://cdn.jwplayer.com/libraries/your-library-id.js"></script>
-    <script src="https://cdn.streamroot.io/dnajs/v5/stable/stable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M3U8 Player</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="myPlayer"></div>
-    <script>
-        // Initialize Streamroot DNA
-        const dnaConfig = {
-            hls: {
-                dnaEnabled: true,
-                streamrootKey: 'your-streamroot-key',
-                latencyControl: {
-                    liveMaxLatency: 10
-                }
-            }
-        };
-
-        // Attach DNA to JW Player
-        const player = jwplayer("myPlayer").setup({
-            playlist: [
-                {
-                    file: "https://tv5.hoichoi24.com/1024/index.m3u8",
-                    drm: {
-                        widevine: {
-                            url: "https://your-widevine-license-server-url.com"
-                        },
-                        playready: {
-                            url: "https://your-playready-license-server-url.com"
-                        },
-                        fairplay: {
-                            certificateUrl: "https://your-fairplay-certificate-url.com",
-                            processSpcUrl: "https://your-fairplay-license-server-url.com"
-                        }
-                    }
-                }
-            ],
-            autostart: false,
-            width: "100%",
-            aspectratio: "16:9",
-            dnaConfig: dnaConfig
-        });
-
-        // Enable Streamroot DNA for the JW Player instance
-        streamrootDNA.initForJWPlayer(player, dnaConfig);
-    </script>
+    <div id="player-container">
+        <video id="video" controls></video>
+        <div id="buffering-message">Buffering...</div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="script.js"></script>
 </body>
 </html>
