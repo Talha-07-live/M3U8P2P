@@ -4,14 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M3U8 Player</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+        }
+
+        #player-container {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        #video {
+            width: 100%;
+            height: auto;
+        }
+
+        #buffering-message, #error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #error-message {
+            background-color: rgba(255, 0, 0, 0.5);
+        }
+    </style>
 </head>
 <body>
     <div id="player-container">
         <video id="video" controls></video>
         <div id="buffering-message">Buffering...</div>
+        <div id="error-message">An error occurred. Please try again later.</div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const bufferingMessage = document.getElementById('buffering-message');
+            const errorMessage = document.getElementById('error-message');
+            
+            function showBuffering() {
+                bufferingMessage.style.display = 'block';
+            }
+
+            function hideBuffering() {
+                bufferingMessage.style.display = 'none';
+            }
+
+            function showError() {
+                errorMessage.style.display = 'block';
+                video.style.display = 'none';
+            }
+
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource('https://tv5.hoichoi24.com/1024/index.m3u8');
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                });
+
+                hls.on(Hls.Events.BUFFER_STALLED, showBuffering);
+                hls.on(Hls.Events.BUFFER_APPENDED, hideBuffering);
+                hls.on(Hls.Events.BUFFER_EOS, hideBuffering);
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.error("Fatal network error encountered, trying to recover...");
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.error("Fatal media error encountered, trying to recover...");
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.error("Fatal error encountered, cannot recover.");
+                                showError();
+                                hls.destroy();
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = 'https://tv5.hoichoi24.com/1024/index.m3u8';
+                video.addEventListener('loadedmetadata', () => {
+                    video.play();
+                });
+
+                video.addEventListener('waiting', showBuffering);
+                video.addEventListener('playing', hideBuffering);
+                video.addEventListener('error', showError);
+            }
+        });
+    </script>
 </body>
 </html>
