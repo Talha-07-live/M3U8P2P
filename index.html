@@ -21,7 +21,7 @@
         }
 
         #video {
-            width: 120%;
+            width: 100%;
             height: auto;
         }
 
@@ -60,6 +60,8 @@
             const errorMessage = document.getElementById('error-message');
             const retryMessage = document.getElementById('retry-message');
             let retryCount = 0;
+            const primarySource = 'https://tv5.hoichoi24.com/1024/index.m3u8';
+            const fallbackSource = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // Example fallback URL
 
             function showBuffering() {
                 bufferingMessage.style.display = 'block';
@@ -82,20 +84,8 @@
                 video.style.display = 'block';
             }
 
-            if (Hls.isSupported()) {
-                const hls = new Hls({
-                    maxBufferLength: 60,
-                    maxMaxBufferLength: 300,
-                    maxBufferSize: 60 * 1000 * 1000,
-                    maxBufferHole: 2,
-                    lowBufferWatchdogPeriod: 0.5,
-                    highBufferWatchdogPeriod: 3,
-                    liveSyncDuration: 30,
-                    liveMaxLatencyDuration: 60,
-                    liveSyncDurationCount: 3,
-                    liveMaxLatencyDurationCount: Infinity,
-                });
-                hls.loadSource('https://tv5.hoichoi24.com/1024/index.m3u8');
+            function loadSource(hls, url) {
+                hls.loadSource(url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     video.play();
@@ -133,12 +123,47 @@
                         }
                     }
                 });
+            }
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    maxBufferLength: 60,
+                    maxMaxBufferLength: 300,
+                    maxBufferSize: 60 * 1000 * 1000,
+                    maxBufferHole: 2,
+                    lowBufferWatchdogPeriod: 0.5,
+                    highBufferWatchdogPeriod: 3,
+                    liveSyncDuration: 30,
+                    liveMaxLatencyDuration: 60,
+                    liveSyncDurationCount: 3,
+                    liveMaxLatencyDurationCount: Infinity,
+                });
+                loadSource(hls, primarySource);
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal && retryCount > 2) {
+                        console.error("Switching to fallback source.");
+                        loadSource(hls, fallbackSource);
+                    }
+                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = 'https://tv5.hoichoi24.com/1024/index.m3u8';
+                video.src = primarySource;
                 video.addEventListener('loadedmetadata', () => {
                     video.play();
                 });
 
                 video.addEventListener('waiting', showBuffering);
-
-            
+                video.addEventListener('playing', hideBuffering);
+                video.addEventListener('error', () => {
+                    retryCount++;
+                    showError(5 * retryCount);
+                    setTimeout(() => {
+                        video.src = fallbackSource;
+                        video.play();
+                        hideError();
+                    }, 5000 * retryCount);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
